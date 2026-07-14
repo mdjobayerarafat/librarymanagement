@@ -1,0 +1,30 @@
+using LibraryManagementSystem.Data;
+using LibraryManagementSystem.UI.Forms;
+using System;
+using System.Windows.Forms;
+
+namespace LibraryManagementSystem
+{
+    internal static class Program
+    {
+        [STAThread]
+        private static void Main()
+        {
+            ApplicationConfiguration.Initialize();
+
+            try
+            {
+                DatabaseHelper.EnsureDatabaseSetup();
+                Application.Run(new LoginForm());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"The application could not start.\n\n{ex.Message}",
+                    "Startup Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+    }
+}
