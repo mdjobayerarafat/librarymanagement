@@ -2,7 +2,9 @@ using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace LibraryManagementSystem.UI.Controls
 {
@@ -10,171 +12,309 @@ namespace LibraryManagementSystem.UI.Controls
     {
         private readonly BookService bookService = new();
         private readonly TextBox txtSearch;
-        private readonly DataGridView dgvBooks;
-
+        private readonly FlowLayoutPanel flpBooks;
+        private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+        private static readonly Color CardBackgroundColor = Color.White;
+        private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
+        private static readonly Color TextSecondaryColor = Color.FromArgb(100, 116, 139);
+        private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
+        private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
+        private static readonly Color TagColor = Color.FromArgb(230, 224, 213);
+        private static readonly Color TagTextColor = Color.FromArgb(75, 85, 99);
         public BooksControl()
         {
-            BackColor = Color.FromArgb(15, 23, 42);
+            BackColor = BackgroundColor;
             Dock = DockStyle.Fill;
-            Padding = new Padding(0);
+            Padding = new Padding(32, 24, 32, 24);
 
-            // Title Panel
-            var titlePanel = new Panel
+            // Title Section
+            var lblTitle = new Label
             {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.FromArgb(30, 41, 59)
+                Text = "Books",
+                Font = new Font("Georgia", 36, FontStyle.Bold),
+                ForeColor = TextPrimaryColor,
+                AutoSize = true,
+                Location = new Point(0, 0)
             };
+
+            var lblSubtitle = new Label
+            {
+                Text = "8 titles in collection",
+                Font = new Font("Segoe UI", 14),
+                ForeColor = TextSecondaryColor,
+                AutoSize = true,
+                Location = new Point(0, 52)
+            };
+
+            // Toolbar Section
+            var toolbarPanel = new Panel
+            {
+                Location = new Point(0, 96),
+                Size = new Size(ClientSize.Width - 64, 56),
+                BackColor = Color.Transparent,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
+            txtSearch = CreateStyledTextBox("Search by title, author or ISBN...", new Point(0, 0), 400);
+            txtSearch.TextChanged += (_, _) => LoadBooks(txtSearch.Text.Trim());
+
+            var btnAdd = CreateStyledButton("➕ Add Book", AccentColor, Color.White, (_, _) => AddBook());
+            btnAdd.Location = new Point(toolbarPanel.ClientSize.Width - 180, 0);
+            toolbarPanel.Resize += (_, _) =>
+            {
+                btnAdd.Location = new Point(toolbarPanel.ClientSize.Width - 180, 0);
+            };
+
+            toolbarPanel.Controls.AddRange(new Control[] { txtSearch, btnAdd });
+
+            // Books Container
+            flpBooks = new FlowLayoutPanel
+            {
+                Location = new Point(0, 176),
+                Size = new Size(ClientSize.Width - 64, ClientSize.Height - 200),
+                BackColor = Color.Transparent,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = true,
+                AutoScroll = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+            };
+            Resize += (_, _) =>
+            {
+                toolbarPanel.Size = new Size(ClientSize.Width - 64, 56);
+                flpBooks.Size = new Size(ClientSize.Width - 64, ClientSize.Height - 200);
+            };
+
+            Controls.AddRange(new Control[] { lblTitle, lblSubtitle, toolbarPanel, flpBooks });
+
+            Load += (_, _) => LoadBooks();
+        }
+
+        private TextBox CreateStyledTextBox(string placeholder, Point location, int width)
+        {
+            var txtBox = new TextBox
+            {
+                PlaceholderText = placeholder,
+                Font = new Font("Segoe UI", 14),
+                Size = new Size(width, 48),
+                Location = location,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = InputBackgroundColor,
+                ForeColor = TextPrimaryColor
+            };
+            Controls.Add(txtBox);
+            return txtBox;
+        }
+
+        private Button CreateStyledButton(string text, Color backColor, Color foreColor, EventHandler onClick)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Size = new Size(180, 48),
+                BackColor = backColor,
+                ForeColor = foreColor,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 0;
+            btn.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 8;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(btn.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(btn.Width - cr * 2, btn.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, btn.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                btn.Region = new Region(path);
+            };
+            btn.Click += onClick;
+            btn.MouseEnter += (s, e) => btn.BackColor = ControlPaint.Light(backColor, 0.1f);
+            btn.MouseLeave += (s, e) => btn.BackColor = backColor;
+            return btn;
+        }
+
+        private Panel CreateBookCard(Book book)
+        {
+            var card = new Panel
+            {
+                Size = new Size(420, 170),
+                BackColor = CardBackgroundColor,
+                Margin = new Padding(0, 0, 24, 24)
+            };
+            card.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 12;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(card.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(card.Width - cr * 2, card.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, card.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                card.Region = new Region(path);
+            };
+
+            var coverPanel = new Panel
+            {
+                Size = new Size(100, 138),
+                Location = new Point(24, 16),
+                BackColor = InputBackgroundColor
+            };
+            coverPanel.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 6;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(coverPanel.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(coverPanel.Width - cr * 2, coverPanel.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, coverPanel.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                coverPanel.Region = new Region(path);
+            };
+
+            var picCover = new PictureBox
+            {
+                Size = new Size(100, 138),
+                Location = new Point(0, 0),
+                BackColor = Color.Transparent,
+                SizeMode = PictureBoxSizeMode.Zoom
+            };
+            if (!string.IsNullOrWhiteSpace(book.CoverImagePath) && System.IO.File.Exists(book.CoverImagePath))
+            {
+                try
+                {
+                    picCover.Image = Image.FromFile(book.CoverImagePath);
+                }
+                catch
+                {
+                    // Ignore if can't load
+                }
+            }
+            coverPanel.Controls.Add(picCover);
 
             var lblTitle = new Label
             {
-                Text = "📚 Books Management",
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.White,
+                Text = book.Title,
+                Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                ForeColor = TextPrimaryColor,
+                Size = new Size(256, 44),
+                Location = new Point(140, 20),
+                AutoSize = false,
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.TopLeft
+            };
+
+            var lblAuthorYear = new Label
+            {
+                Text = $"{book.Author} · {book.YearPublished}",
+                Font = new Font("Segoe UI", 12),
+                ForeColor = TextSecondaryColor,
                 AutoSize = true,
-                Location = new Point(20, 18)
+                Location = new Point(140, 60),
+                MaximumSize = new Size(256, 0)
             };
 
-            titlePanel.Controls.Add(lblTitle);
-
-            // Toolbar Panel
-            var toolbarPanel = new Panel
+            var tagPanel = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 70,
-                BackColor = Color.FromArgb(30, 41, 59)
+                Size = new Size(180, 32),
+                Location = new Point(140, 92),
+                BackColor = TagColor
             };
-
-            txtSearch = new TextBox
+            tagPanel.Paint += (s, e) =>
             {
-                PlaceholderText = "🔍 Search by title, author, ISBN, or category...",
-                Width = 400,
-                Height = 36,
-                Font = new Font("Segoe UI", 10),
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(51, 65, 85),
-                ForeColor = Color.White,
-                Location = new Point(20, 17)
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 16;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(tagPanel.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(tagPanel.Width - cr * 2, tagPanel.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, tagPanel.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                tagPanel.Region = new Region(path);
             };
-            txtSearch.TextChanged += (_, _) => LoadBooks(txtSearch.Text.Trim());
-
-            var btnAdd = CreateStyledButton("➕ Add Book", Color.FromArgb(46, 204, 113), (_, _) => AddBook());
-            btnAdd.Location = new Point(440, 17);
-            var btnEdit = CreateStyledButton("✏️ Edit Book", Color.FromArgb(241, 196, 15), (_, _) => EditBook());
-            btnEdit.Location = new Point(560, 17);
-            var btnDelete = CreateStyledButton("🗑️ Delete Book", Color.FromArgb(231, 76, 60), (_, _) => DeleteBook());
-            btnDelete.Location = new Point(680, 17);
-            var btnRefresh = CreateStyledButton("🔄 Refresh", Color.FromArgb(52, 73, 94), (_, _) => LoadBooks(txtSearch.Text.Trim()));
-            btnRefresh.Location = new Point(810, 17);
-
-            toolbarPanel.Controls.AddRange(new Control[] { txtSearch, btnAdd, btnEdit, btnDelete, btnRefresh });
-
-            // Data Grid
-            dgvBooks = new DataGridView
+            var lblTag = new Label
             {
-                Dock = DockStyle.Fill,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells,
-                ReadOnly = true,
-                MultiSelect = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                BackgroundColor = Color.FromArgb(30, 41, 59),
-                BorderStyle = BorderStyle.None,
-                GridColor = Color.FromArgb(51, 65, 85),
-                Font = new Font("Segoe UI", 9),
-                RowHeadersVisible = false,
-                EnableHeadersVisualStyles = false,
-                AllowUserToResizeColumns = true,
-                ColumnHeadersDefaultCellStyle =
-                {
-                    BackColor = Color.FromArgb(51, 65, 85),
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    WrapMode = DataGridViewTriState.True
-                },
-                DefaultCellStyle =
-                {
-                    BackColor = Color.FromArgb(30, 41, 59),
-                    ForeColor = Color.White,
-                    SelectionBackColor = Color.FromArgb(59, 130, 246),
-                    SelectionForeColor = Color.White,
-                    Padding = new Padding(5),
-                    WrapMode = DataGridViewTriState.True
-                },
-                AlternatingRowsDefaultCellStyle =
-                {
-                    BackColor = Color.FromArgb(30, 41, 59),
-                    ForeColor = Color.White,
-                    WrapMode = DataGridViewTriState.True
-                },
-                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells
+                Text = book.Category,
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                ForeColor = TagTextColor,
+                AutoSize = true,
+                Location = new Point(16, 6),
+                BackColor = Color.Transparent,
+                MaximumSize = new Size(148, 0)
             };
+            tagPanel.Controls.Add(lblTag);
 
-            Controls.Add(dgvBooks);
-            Controls.Add(toolbarPanel);
-            Controls.Add(titlePanel);
-
-            // Handle resize to scale fonts
-            Resize += (_, _) => UpdateGridFont();
-
-            Load += (_, _) =>
+            var availabilityColor = book.Available > 0 ? AccentColor : Color.FromArgb(239, 68, 68);
+            var availabilityPanel = new Panel
             {
-                LoadBooks();
-                UpdateGridFont();
+                Size = new Size(64, 32),
+                Location = new Point(332, 92),
+                BackColor = book.Available > 0 ? AccentColor : Color.FromArgb(254, 226, 226)
             };
-        }
-
-        private Button CreateStyledButton(string text, Color color, EventHandler onClick)
-        {
-            var button = new Button
+            availabilityPanel.Paint += (s, e) =>
             {
-                Text = text,
-                Width = 110,
-                Height = 36,
-                BackColor = color,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                FlatAppearance = { BorderSize = 0 }
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 16;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(availabilityPanel.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(availabilityPanel.Width - cr * 2, availabilityPanel.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, availabilityPanel.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                availabilityPanel.Region = new Region(path);
             };
-            button.Click += onClick;
-            button.MouseEnter += (s, e) => button.BackColor = ControlPaint.Light(color, 0.1f);
-            button.MouseLeave += (s, e) => button.BackColor = color;
-            return button;
-        }
+            var lblAvailability = new Label
+            {
+                Text = book.Available > 0 ? $"{book.Available}" : "0",
+                Font = new Font("Segoe UI", 13, FontStyle.Bold),
+                ForeColor = book.Available > 0 ? Color.White : Color.FromArgb(239, 68, 68),
+                AutoSize = true,
+                Location = new Point(24, 6),
+                BackColor = Color.Transparent
+            };
+            availabilityPanel.Controls.Add(lblAvailability);
 
-        private void UpdateGridFont()
-        {
-            int availableWidth = ClientSize.Width;
-            float fontSize = Math.Max(8, Math.Min(12, availableWidth / 120f));
-
-            dgvBooks.Font = new Font("Segoe UI", fontSize);
-            dgvBooks.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", fontSize + 0.5f, FontStyle.Bold);
+            card.Controls.AddRange(new Control[] { coverPanel, lblTitle, lblAuthorYear, tagPanel, availabilityPanel });
+            return card;
         }
 
         private void LoadBooks(string keyword = "")
         {
             try
             {
-                dgvBooks.DataSource = string.IsNullOrWhiteSpace(keyword)
+                flpBooks.Controls.Clear();
+                var books = string.IsNullOrWhiteSpace(keyword)
                     ? bookService.GetAllBooks()
                     : bookService.SearchBooks(keyword);
 
-                var idColumn = dgvBooks.Columns["BookID"];
-                if (idColumn != null)
+                foreach (var book in books)
                 {
-                    idColumn.Visible = false;
+                    flpBooks.Controls.Add(CreateBookCard(book));
+                }
+
+                // Update subtitle count
+                foreach (Control control in Controls)
+                {
+                    if (control is Label lbl && lbl.Text.EndsWith("titles in collection"))
+                    {
+                        lbl.Text = $"{books.Count} titles in collection";
+                        break;
+                    }
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Unable to load books.\n\n{ex.Message}", "Books", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private Book? GetSelectedBook()
-        {
-            return dgvBooks.CurrentRow?.DataBoundItem as Book;
         }
 
         private void AddBook()
@@ -185,41 +325,6 @@ namespace LibraryManagementSystem.UI.Controls
                 bookService.AddBook(editor.Book);
                 LoadBooks(txtSearch.Text.Trim());
             }
-        }
-
-        private void EditBook()
-        {
-            var selected = GetSelectedBook();
-            if (selected == null)
-            {
-                MessageBox.Show("Please select a book first.", "Books", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            using var editor = new BookEditorForm(selected);
-            if (editor.ShowDialog(this) == DialogResult.OK)
-            {
-                bookService.UpdateBook(editor.Book);
-                LoadBooks(txtSearch.Text.Trim());
-            }
-        }
-
-        private void DeleteBook()
-        {
-            var selected = GetSelectedBook();
-            if (selected == null)
-            {
-                MessageBox.Show("Please select a book first.", "Books", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            if (MessageBox.Show($"Delete '{selected.Title}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-            {
-                return;
-            }
-
-            bookService.DeleteBook(selected.BookID);
-            LoadBooks(txtSearch.Text.Trim());
         }
 
         private sealed class BookEditorForm : Form
@@ -233,9 +338,17 @@ namespace LibraryManagementSystem.UI.Controls
             private readonly NumericUpDown numQuantity = new() { Left = 150, Top = 230, Width = 240, Minimum = 0, Maximum = 10000, Value = 1 };
             private readonly NumericUpDown numAvailable = new() { Left = 150, Top = 265, Width = 240, Minimum = 0, Maximum = 10000, Value = 1 };
             private readonly TextBox txtShelf = new() { Left = 150, Top = 300, Width = 240 };
-            private readonly PictureBox picCover = new() { Left = 30, Top = 340, Width = 120, Height = 160, BackColor = Color.FromArgb(51, 65, 85), SizeMode = PictureBoxSizeMode.Zoom };
+            private readonly PictureBox picCover = new() { Left = 30, Top = 340, Width = 120, Height = 160, BackColor = InputBackgroundColor, SizeMode = PictureBoxSizeMode.Zoom };
             private readonly Button btnBrowseCover = new() { Text = "Browse Cover", Left = 170, Top = 340, Width = 220, Height = 35 };
             private string _coverImagePath = string.Empty;
+
+            private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+            private static readonly Color CardBackgroundColor = Color.White;
+            private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
+            private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
+            private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
+            private static readonly Color WarningColor = Color.FromArgb(239, 68, 68);
+            private static readonly Color WarningLightColor = Color.FromArgb(254, 226, 226);
 
             public Book Book { get; }
 
@@ -264,19 +377,32 @@ namespace LibraryManagementSystem.UI.Controls
                 MaximizeBox = false;
                 MinimizeBox = false;
                 StartPosition = FormStartPosition.CenterParent;
-                BackColor = Color.FromArgb(30, 41, 59);
-                ForeColor = Color.White;
+                BackColor = BackgroundColor;
+                ForeColor = TextPrimaryColor;
 
                 // Style the browse button
-                btnBrowseCover.BackColor = Color.FromArgb(59, 130, 246);
+                btnBrowseCover.BackColor = AccentColor;
                 btnBrowseCover.ForeColor = Color.White;
                 btnBrowseCover.FlatStyle = FlatStyle.Flat;
                 btnBrowseCover.Font = new Font("Segoe UI", 10, FontStyle.Bold);
                 btnBrowseCover.Cursor = Cursors.Hand;
                 btnBrowseCover.FlatAppearance.BorderSize = 0;
+                btnBrowseCover.Paint += (s, e) =>
+                {
+                    var g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    using var path = new GraphicsPath();
+                    int cr = 6;
+                    path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                    path.AddArc(btnBrowseCover.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                    path.AddArc(btnBrowseCover.Width - cr * 2, btnBrowseCover.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                    path.AddArc(0, btnBrowseCover.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                    path.CloseAllFigures();
+                    btnBrowseCover.Region = new Region(path);
+                };
                 btnBrowseCover.Click += (s, e) => BrowseForCover();
-                btnBrowseCover.MouseEnter += (s, e) => btnBrowseCover.BackColor = ControlPaint.Light(Color.FromArgb(59, 130, 246), 0.1f);
-                btnBrowseCover.MouseLeave += (s, e) => btnBrowseCover.BackColor = Color.FromArgb(59, 130, 246);
+                btnBrowseCover.MouseEnter += (s, e) => btnBrowseCover.BackColor = ControlPaint.Light(AccentColor, 0.1f);
+                btnBrowseCover.MouseLeave += (s, e) => btnBrowseCover.BackColor = AccentColor;
 
                 Controls.AddRange(new Control[]
                 {
@@ -360,15 +486,15 @@ namespace LibraryManagementSystem.UI.Controls
                     Left = 30,
                     Top = top + 4,
                     Width = 100,
-                    ForeColor = Color.White,
+                    ForeColor = TextPrimaryColor,
                     Font = new Font("Segoe UI", 10)
                 };
             }
 
             private static TextBox StyleTextBox(TextBox textBox)
             {
-                textBox.BackColor = Color.FromArgb(51, 65, 85);
-                textBox.ForeColor = Color.White;
+                textBox.BackColor = InputBackgroundColor;
+                textBox.ForeColor = TextPrimaryColor;
                 textBox.BorderStyle = BorderStyle.FixedSingle;
                 textBox.Font = new Font("Segoe UI", 10);
                 return textBox;
@@ -376,8 +502,8 @@ namespace LibraryManagementSystem.UI.Controls
 
             private static NumericUpDown StyleNumericUpDown(NumericUpDown numericUpDown)
             {
-                numericUpDown.BackColor = Color.FromArgb(51, 65, 85);
-                numericUpDown.ForeColor = Color.White;
+                numericUpDown.BackColor = InputBackgroundColor;
+                numericUpDown.ForeColor = TextPrimaryColor;
                 numericUpDown.Font = new Font("Segoe UI", 10);
                 return numericUpDown;
             }
@@ -391,16 +517,29 @@ namespace LibraryManagementSystem.UI.Controls
                     Top = top,
                     Width = 100,
                     Height = 35,
-                    BackColor = Color.FromArgb(59, 130, 246),
-                    ForeColor = Color.White,
+                    BackColor = text == "Save" ? AccentColor : Color.White,
+                    ForeColor = text == "Save" ? Color.White : TextPrimaryColor,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
                 button.FlatAppearance.BorderSize = 0;
+                button.Paint += (s, e) =>
+                {
+                    var g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    using var path = new GraphicsPath();
+                    int cr = 6;
+                    path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                    path.AddArc(button.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                    path.AddArc(button.Width - cr * 2, button.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                    path.AddArc(0, button.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                    path.CloseAllFigures();
+                    button.Region = new Region(path);
+                };
                 button.Click += onClick;
-                button.MouseEnter += (s, e) => button.BackColor = ControlPaint.Light(Color.FromArgb(59, 130, 246), 0.1f);
-                button.MouseLeave += (s, e) => button.BackColor = Color.FromArgb(59, 130, 246);
+                button.MouseEnter += (s, e) => button.BackColor = text == "Save" ? ControlPaint.Light(AccentColor, 0.1f) : InputBackgroundColor;
+                button.MouseLeave += (s, e) => button.BackColor = text == "Save" ? AccentColor : Color.White;
                 return button;
             }
 

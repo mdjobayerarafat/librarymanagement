@@ -1,8 +1,10 @@
 using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -14,97 +16,142 @@ namespace LibraryManagementSystem.UI.Controls
         private readonly FlowLayoutPanel _galleryPanel;
         private readonly ComboBox _cboCategory;
         private readonly TextBox _txtSearch;
+        private readonly Button _btnRefresh;
         private List<Book> _allBooks = new();
         private List<Book>? _currentBooks;
+        private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+        private static readonly Color CardBackgroundColor = Color.White;
+        private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
+        private static readonly Color TextSecondaryColor = Color.FromArgb(100, 116, 139);
+        private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
+        private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
 
         public BookGalleryControl()
         {
-            BackColor = Color.FromArgb(15, 23, 42);
+            BackColor = BackgroundColor;
             Dock = DockStyle.Fill;
-            Padding = new Padding(20);
+            Padding = new Padding(32, 24, 32, 24);
 
-            // Title Panel
-            var titlePanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.FromArgb(30, 41, 59)
-            };
-
+            // Title Section
             var lblTitle = new Label
             {
-                Text = "📚 Book Gallery",
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.White,
+                Text = "Book Gallery",
+                Font = new Font("Georgia", 36, FontStyle.Bold),
+                ForeColor = TextPrimaryColor,
                 AutoSize = true,
-                Location = new Point(20, 18)
+                Location = new Point(0, 0)
             };
-
-            titlePanel.Controls.Add(lblTitle);
 
             // Filter Panel
             var filterPanel = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 70,
-                BackColor = Color.FromArgb(30, 41, 59),
-                Padding = new Padding(20)
+                Location = new Point(0, 80),
+                Size = new Size(ClientSize.Width - 64, 56),
+                BackColor = Color.Transparent,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
-            _txtSearch = new TextBox
-            {
-                PlaceholderText = "🔍 Search by title, author...",
-                Width = 300,
-                Height = 36,
-                Font = new Font("Segoe UI", 10),
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(51, 65, 85),
-                ForeColor = Color.White,
-                Location = new Point(20, 17)
-            };
+            _txtSearch = CreateStyledTextBox("Search by title, author...", new Point(0, 4), 300, filterPanel);
             _txtSearch.TextChanged += (_, _) => FilterBooks();
 
             var lblCategory = new Label
             {
                 Text = "Category:",
-                Font = new Font("Segoe UI", 10),
-                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 11),
+                ForeColor = TextPrimaryColor,
                 AutoSize = true,
-                Location = new Point(340, 22)
+                Location = new Point(332, 16)
             };
 
             _cboCategory = new ComboBox
             {
                 Width = 200,
-                Height = 36,
-                Font = new Font("Segoe UI", 10),
-                BackColor = Color.FromArgb(51, 65, 85),
-                ForeColor = Color.White,
-                Location = new Point(420, 17),
-                DropDownStyle = ComboBoxStyle.DropDownList
+                Height = 40,
+                Font = new Font("Segoe UI", 11),
+                BackColor = InputBackgroundColor,
+                ForeColor = TextPrimaryColor,
+                Location = new Point(412, 8),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat
             };
             _cboCategory.SelectedIndexChanged += (_, _) => FilterBooks();
 
-            filterPanel.Controls.AddRange(new Control[] { _txtSearch, lblCategory, _cboCategory });
+            // Refresh button
+            _btnRefresh = CreateStyledButton("Refresh", Color.White, TextPrimaryColor, async (_, _) => await RefreshBooksAsync());
+            _btnRefresh.Location = new Point(640, 4);
+
+            filterPanel.Controls.AddRange(new Control[] { lblCategory, _cboCategory, _btnRefresh });
 
             // Gallery Panel
             _galleryPanel = new FlowLayoutPanel
             {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(15, 23, 42),
+                Location = new Point(0, 156),
+                Size = new Size(ClientSize.Width - 64, ClientSize.Height - 180),
+                BackColor = BackgroundColor,
                 Padding = new Padding(10),
                 AutoScroll = true,
-                WrapContents = true
+                WrapContents = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
 
-            Controls.Add(_galleryPanel);
-            Controls.Add(filterPanel);
-            Controls.Add(titlePanel);
+            Controls.AddRange(new Control[] { lblTitle, filterPanel, _galleryPanel });
 
-            // Handle resize
-            Resize += (_, _) => UpdateGalleryLayout();
+            Resize += (_, _) =>
+            {
+                filterPanel.Size = new Size(ClientSize.Width - 64, 56);
+                _galleryPanel.Size = new Size(ClientSize.Width - 64, ClientSize.Height - 180);
+                UpdateGalleryLayout();
+            };
 
             Load += (_, _) => LoadBooks();
+        }
+
+        private TextBox CreateStyledTextBox(string placeholder, Point location, int width, Panel parent)
+        {
+            var txtBox = new TextBox
+            {
+                PlaceholderText = placeholder,
+                Font = new Font("Segoe UI", 14),
+                Size = new Size(width, 48),
+                Location = location,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = InputBackgroundColor,
+                ForeColor = TextPrimaryColor
+            };
+            parent.Controls.Add(txtBox);
+            return txtBox;
+        }
+
+        private Button CreateStyledButton(string text, Color backColor, Color foreColor, EventHandler onClick)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Size = new Size(120, 48),
+                BackColor = backColor,
+                ForeColor = foreColor,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 0;
+            btn.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 8;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(btn.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(btn.Width - cr * 2, btn.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, btn.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                btn.Region = new Region(path);
+            };
+            btn.Click += onClick;
+            btn.MouseEnter += (s, e) => btn.BackColor = backColor == Color.White ? InputBackgroundColor : ControlPaint.Light(backColor, 0.1f);
+            btn.MouseLeave += (s, e) => btn.BackColor = backColor;
+            return btn;
         }
 
         private void LoadBooks()
@@ -112,6 +159,33 @@ namespace LibraryManagementSystem.UI.Controls
             _allBooks = _bookService.GetAllBooks();
             LoadCategories();
             RenderBooks(_allBooks);
+        }
+
+        public async Task RefreshBooksAsync()
+        {
+            try
+            {
+                _btnRefresh.Enabled = false;
+                var originalText = _btnRefresh.Text;
+                _btnRefresh.Text = "Refreshing...";
+
+                // Load books on background thread to avoid UI freeze
+                await Task.Run(() => { _allBooks = _bookService.GetAllBooks(); });
+
+                // Update UI
+                LoadCategories();
+                RenderBooks(_allBooks);
+
+                _btnRefresh.Text = originalText;
+            }
+            catch
+            {
+                // ignore for now
+            }
+            finally
+            {
+                _btnRefresh.Enabled = true;
+            }
         }
 
         private void LoadCategories()
@@ -180,7 +254,7 @@ namespace LibraryManagementSystem.UI.Controls
                             if (lbl.Name == "lblTitle")
                             {
                                 lbl.Size = new Size(lblWidth, (int)(cardHeight * 0.12));
-                                lbl.Font = new Font("Segoe UI", Math.Max(8, cardWidth / 18), FontStyle.Bold);
+                                lbl.Font = new Font("Georgia", Math.Max(8, cardWidth / 18), FontStyle.Bold);
                                 lbl.Location = new Point((cardWidth - lblWidth) / 2, (int)(cardHeight * 0.72));
                             }
                             else if (lbl.Name == "lblAuthor")
@@ -192,7 +266,7 @@ namespace LibraryManagementSystem.UI.Controls
                             else if (lbl.Name == "lblAvailable")
                             {
                                 lbl.Size = new Size(lblWidth, (int)(cardHeight * 0.08));
-                                lbl.Font = new Font("Segoe UI", Math.Max(7, cardWidth / 25));
+                                lbl.Font = new Font("Segoe UI", Math.Max(7, cardWidth / 25), FontStyle.Bold);
                                 lbl.Location = new Point((cardWidth - lblWidth) / 2, (int)(cardHeight * 0.91));
                             }
                         }
@@ -205,16 +279,29 @@ namespace LibraryManagementSystem.UI.Controls
         {
             var card = new Panel
             {
-                BackColor = Color.FromArgb(30, 41, 59),
+                BackColor = CardBackgroundColor,
                 Margin = new Padding(10),
                 Cursor = Cursors.Hand
+            };
+            card.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 12;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(card.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(card.Width - cr * 2, card.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, card.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                card.Region = new Region(path);
             };
 
             // Cover Image
             var picCover = new PictureBox
             {
                 Name = "picCover",
-                BackColor = Color.FromArgb(51, 65, 85),
+                BackColor = InputBackgroundColor,
                 SizeMode = PictureBoxSizeMode.Zoom
             };
 
@@ -235,7 +322,7 @@ namespace LibraryManagementSystem.UI.Controls
             {
                 Name = "lblTitle",
                 Text = book.Title.Length > 30 ? book.Title.Substring(0, 30) + "..." : book.Title,
-                ForeColor = Color.White,
+                ForeColor = TextPrimaryColor,
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -245,7 +332,7 @@ namespace LibraryManagementSystem.UI.Controls
             {
                 Name = "lblAuthor",
                 Text = book.Author,
-                ForeColor = Color.FromArgb(148, 163, 184),
+                ForeColor = TextSecondaryColor,
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -255,7 +342,7 @@ namespace LibraryManagementSystem.UI.Controls
             {
                 Name = "lblAvailable",
                 Text = $"{book.Available}/{book.Quantity} Available",
-                ForeColor = book.Available > 0 ? Color.FromArgb(16, 185, 129) : Color.FromArgb(239, 68, 68),
+                ForeColor = book.Available > 0 ? AccentColor : Color.FromArgb(220, 38, 38),
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter
             };

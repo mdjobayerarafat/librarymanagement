@@ -101,45 +101,45 @@ SELECT 'admin', SHA2('admin123', 256), 'Admin'
 WHERE NOT EXISTS (SELECT 1 FROM Users WHERE Username = 'admin');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '9780000000010', 'Clean Code', 'Robert C. Martin', 'Prentice Hall', 'Programming', 2008, 5, 5, 'A1', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000001');
+SELECT '9780000000020', 'Clean Code', 'Robert C. Martin', 'Prentice Hall', 'Programming', 2008, 5, 5, 'A1', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000020');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '97800000000019', 'The Pragmatic Programmer', 'Andrew Hunt, David Thomas', 'Addison-Wesley', 'Programming', 1999, 4, 4, 'A1', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000002');
+SELECT '9780000000019', 'The Pragmatic Programmer', 'Andrew Hunt, David Thomas', 'Addison-Wesley', 'Programming', 1999, 4, 4, 'A1', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000019');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '97800000000018', 'Introduction to Algorithms', 'Thomas H. Cormen', 'MIT Press', 'Computer Science', 2009, 3, 3, 'A2', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000003');
+SELECT '9780000000018', 'Introduction to Algorithms', 'Thomas H. Cormen', 'MIT Press', 'Computer Science', 2009, 3, 3, 'A2', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000018');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '97800000000017', 'Design Patterns', 'Erich Gamma', 'Addison-Wesley', 'Software Engineering', 1994, 6, 6, 'A3', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000004');
+SELECT '9780000000017', 'Design Patterns', 'Erich Gamma', 'Addison-Wesley', 'Software Engineering', 1994, 6, 6, 'A3', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000017');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '97800000000016', 'Code Complete', 'Steve McConnell', 'Microsoft Press', 'Software Development', 2004, 4, 4, 'A2', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000005');
+SELECT '9780000000016', 'Code Complete', 'Steve McConnell', 'Microsoft Press', 'Software Development', 2004, 4, 4, 'A2', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000016');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '97800000000015', 'Effective Java', 'Joshua Bloch', 'Addison-Wesley', 'Programming', 2008, 5, 5, 'A4', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '97800000000006');
+SELECT '9780000000029', 'Effective Java', 'Joshua Bloch', 'Addison-Wesley', 'Programming', 2008, 5, 5, 'A4', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000029');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '97800000000014', 'You Don''t Know JS', 'Kyle Simpson', 'O''Reilly Media', 'Web Development', 2015, 7, 7, 'B1', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '97800000000007');
+SELECT '9780000000022', 'You Don''t Know JS', 'Kyle Simpson', 'O''Reilly Media', 'Web Development', 2015, 7, 7, 'B1', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000022');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '97800000000013', 'Refactoring', 'Martin Fowler', 'Addison-Wesley', 'Programming', 2018, 3, 3, 'A1', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '97800000000008');
+SELECT '9780000000023', 'Refactoring', 'Martin Fowler', 'Addison-Wesley', 'Programming', 2018, 3, 3, 'A1', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000023');
 
 -- Add some more sample books
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '97800000000012', 'The Clean Coder', 'Robert C. Martin', 'Prentice Hall', 'Programming', 2011, 3, 3, 'B2', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000009');
+SELECT '9780000000024', 'The Clean Coder', 'Robert C. Martin', 'Prentice Hall', 'Programming', 2011, 3, 3, 'B2', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000024');
 
 INSERT INTO Books (ISBN, Title, Author, Publisher, Category, YearPublished, Quantity, Available, ShelfLocation, CoverImagePath)
-SELECT '9780000000011', 'C# in Depth', 'Jon Skeet', 'Manning Publications', 'Programming', 2019, 4, 4, 'B2', ''
-WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000010');
+SELECT '9780000000028', 'C# in Depth', 'Jon Skeet', 'Manning Publications', 'Programming', 2019, 4, 4, 'B2', ''
+WHERE NOT EXISTS (SELECT 1 FROM Books WHERE ISBN = '9780000000028');
 
 INSERT INTO Members (FullName, Email, Phone, Address, MembershipDate, IsActive)
 SELECT 'John Doe', 'john.doe@example.com', '0123456789', '123 Main St, City', NOW(), b'1'

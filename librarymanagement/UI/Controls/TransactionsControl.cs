@@ -2,6 +2,7 @@ using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -14,127 +15,170 @@ namespace LibraryManagementSystem.UI.Controls
         private readonly MemberService memberService = new();
         private readonly TextBox txtSearch;
         private readonly DataGridView dgvTransactions;
+        private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+        private static readonly Color CardBackgroundColor = Color.White;
+        private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
+        private static readonly Color TextSecondaryColor = Color.FromArgb(100, 116, 139);
+        private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
+        private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
 
         public TransactionsControl()
         {
-            BackColor = Color.FromArgb(15, 23, 42);
+            BackColor = BackgroundColor;
             Dock = DockStyle.Fill;
-            Padding = new Padding(0);
+            Padding = new Padding(32, 24, 32, 24);
 
-            // Title Panel
-            var titlePanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.FromArgb(30, 41, 59)
-            };
-
+            // Title Section
             var lblTitle = new Label
             {
-                Text = "🔄 Transactions Management",
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.White,
+                Text = "Transactions",
+                Font = new Font("Georgia", 36, FontStyle.Bold),
+                ForeColor = TextPrimaryColor,
                 AutoSize = true,
-                Location = new Point(20, 18)
+                Location = new Point(0, 0)
             };
 
-            titlePanel.Controls.Add(lblTitle);
-
-            // Toolbar Panel
+            // Toolbar Section
             var toolbarPanel = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 70,
-                BackColor = Color.FromArgb(30, 41, 59)
+                Location = new Point(0, 80),
+                Size = new Size(ClientSize.Width - 64, 56),
+                BackColor = Color.Transparent,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
-            txtSearch = new TextBox
-            {
-                PlaceholderText = "🔍 Search by book, member, or status...",
-                Width = 400,
-                Height = 36,
-                Font = new Font("Segoe UI", 10),
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(51, 65, 85),
-                ForeColor = Color.White,
-                Location = new Point(20, 17)
-            };
+            txtSearch = CreateStyledTextBox("Search by book, member, or status...", new Point(0, 0), 400);
             txtSearch.TextChanged += (_, _) => LoadTransactions(txtSearch.Text.Trim());
 
-            var btnIssue = CreateStyledButton("📖 Issue Book", Color.FromArgb(46, 204, 113), (_, _) => IssueBook());
-            btnIssue.Location = new Point(440, 17);
-            var btnReturn = CreateStyledButton("✅ Return Book", Color.FromArgb(52, 152, 219), (_, _) => ReturnBook());
-            btnReturn.Location = new Point(570, 17);
-            var btnRefresh = CreateStyledButton("🔄 Refresh", Color.FromArgb(52, 73, 94), (_, _) => LoadTransactions(txtSearch.Text.Trim()));
-            btnRefresh.Location = new Point(700, 17);
+            var btnIssue = CreateStyledButton("➕ Issue Book", AccentColor, Color.White, (_, _) => IssueBook());
+            btnIssue.Location = new Point(432, 0);
 
-            toolbarPanel.Controls.AddRange(new Control[] { txtSearch, btnIssue, btnReturn, btnRefresh });
+            var btnReturn = CreateStyledButton("✅ Return Book", Color.FromArgb(25, 118, 210), Color.White, (_, _) => ReturnBook());
+            btnReturn.Location = new Point(584, 0);
+
+            toolbarPanel.Controls.AddRange(new Control[] { txtSearch, btnIssue, btnReturn });
+
+            // Data Grid Container
+            var gridContainer = new Panel
+            {
+                Location = new Point(0, 156),
+                Size = new Size(ClientSize.Width - 64, ClientSize.Height - 180),
+                BackColor = CardBackgroundColor,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+            };
+            gridContainer.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 12;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(gridContainer.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(gridContainer.Width - cr * 2, gridContainer.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, gridContainer.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                gridContainer.Region = new Region(path);
+            };
 
             // Data Grid
             dgvTransactions = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 ReadOnly = true,
                 MultiSelect = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                BackgroundColor = Color.FromArgb(30, 41, 59),
+                BackgroundColor = CardBackgroundColor,
                 BorderStyle = BorderStyle.None,
-                GridColor = Color.FromArgb(51, 65, 85),
-                Font = new Font("Segoe UI", 9),
+                GridColor = InputBackgroundColor,
+                Font = new Font("Segoe UI", 10),
                 RowHeadersVisible = false,
                 EnableHeadersVisualStyles = false,
                 AllowUserToResizeColumns = true,
                 ColumnHeadersDefaultCellStyle =
                 {
-                    BackColor = Color.FromArgb(51, 65, 85),
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    BackColor = InputBackgroundColor,
+                    ForeColor = TextPrimaryColor,
+                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
                     WrapMode = DataGridViewTriState.True
                 },
                 DefaultCellStyle =
                 {
-                    BackColor = Color.FromArgb(30, 41, 59),
-                    ForeColor = Color.White,
-                    SelectionBackColor = Color.FromArgb(59, 130, 246),
-                    SelectionForeColor = Color.White,
+                    BackColor = CardBackgroundColor,
+                    ForeColor = TextPrimaryColor,
+                    SelectionBackColor = AccentLightColor,
+                    SelectionForeColor = AccentColor,
                     Padding = new Padding(5),
                     WrapMode = DataGridViewTriState.True
                 },
                 AlternatingRowsDefaultCellStyle =
                 {
-                    BackColor = Color.FromArgb(30, 41, 59),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(249, 247, 243),
+                    ForeColor = TextPrimaryColor,
                     WrapMode = DataGridViewTriState.True
                 },
                 AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells
             };
 
-            Controls.Add(dgvTransactions);
-            Controls.Add(toolbarPanel);
-            Controls.Add(titlePanel);
+            gridContainer.Controls.Add(dgvTransactions);
+
+            Controls.AddRange(new Control[] { lblTitle, toolbarPanel, gridContainer });
+
+            Resize += (_, _) =>
+            {
+                toolbarPanel.Size = new Size(ClientSize.Width - 64, 56);
+                gridContainer.Size = new Size(ClientSize.Width - 64, ClientSize.Height - 180);
+            };
 
             Load += (_, _) => LoadTransactions();
         }
 
-        private Button CreateStyledButton(string text, Color color, EventHandler onClick)
+        private TextBox CreateStyledTextBox(string placeholder, Point location, int width)
         {
-            var button = new Button
+            var txtBox = new TextBox
+            {
+                PlaceholderText = placeholder,
+                Font = new Font("Segoe UI", 14),
+                Size = new Size(width, 48),
+                Location = location,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = InputBackgroundColor,
+                ForeColor = TextPrimaryColor
+            };
+            Controls.Add(txtBox);
+            return txtBox;
+        }
+
+        private Button CreateStyledButton(string text, Color backColor, Color foreColor, EventHandler onClick)
+        {
+            var btn = new Button
             {
                 Text = text,
-                Width = 120,
-                Height = 36,
-                BackColor = color,
-                ForeColor = Color.White,
+                Size = new Size(140, 48),
+                BackColor = backColor,
+                ForeColor = foreColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                FlatAppearance = { BorderSize = 0 }
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Cursor = Cursors.Hand
             };
-            button.Click += onClick;
-            button.MouseEnter += (s, e) => button.BackColor = ControlPaint.Light(color, 0.1f);
-            button.MouseLeave += (s, e) => button.BackColor = color;
-            return button;
+            btn.FlatAppearance.BorderSize = 0;
+            btn.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 8;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(btn.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(btn.Width - cr * 2, btn.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, btn.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                btn.Region = new Region(path);
+            };
+            btn.Click += onClick;
+            btn.MouseEnter += (s, e) => btn.BackColor = ControlPaint.Light(backColor, 0.1f);
+            btn.MouseLeave += (s, e) => btn.BackColor = backColor;
+            return btn;
         }
 
         private void LoadTransactions(string keyword = "")
@@ -220,6 +264,10 @@ namespace LibraryManagementSystem.UI.Controls
             private readonly ComboBox cboBooks = new() { Left = 130, Top = 20, Width = 240, DropDownStyle = ComboBoxStyle.DropDownList };
             private readonly ComboBox cboMembers = new() { Left = 130, Top = 60, Width = 240, DropDownStyle = ComboBoxStyle.DropDownList };
             private readonly DateTimePicker dtDueDate = new() { Left = 130, Top = 100, Width = 240, Format = DateTimePickerFormat.Short };
+            private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+            private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
+            private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
+            private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
 
             public int SelectedBookId => (cboBooks.SelectedItem as Book)?.BookID ?? 0;
             public int SelectedMemberId => (cboMembers.SelectedItem as Member)?.MemberID ?? 0;
@@ -233,24 +281,24 @@ namespace LibraryManagementSystem.UI.Controls
                 MaximizeBox = false;
                 MinimizeBox = false;
                 StartPosition = FormStartPosition.CenterParent;
-                BackColor = Color.FromArgb(30, 41, 59);
-                ForeColor = Color.White;
+                BackColor = BackgroundColor;
+                ForeColor = TextPrimaryColor;
 
                 cboBooks.DataSource = books;
                 cboBooks.DisplayMember = "Title";
-                cboBooks.BackColor = Color.FromArgb(51, 65, 85);
-                cboBooks.ForeColor = Color.White;
+                cboBooks.BackColor = InputBackgroundColor;
+                cboBooks.ForeColor = TextPrimaryColor;
                 cboBooks.Font = new Font("Segoe UI", 10);
 
                 cboMembers.DataSource = members;
                 cboMembers.DisplayMember = "FullName";
-                cboMembers.BackColor = Color.FromArgb(51, 65, 85);
-                cboMembers.ForeColor = Color.White;
+                cboMembers.BackColor = InputBackgroundColor;
+                cboMembers.ForeColor = TextPrimaryColor;
                 cboMembers.Font = new Font("Segoe UI", 10);
 
                 dtDueDate.Value = DateTime.Now.AddDays(14);
-                dtDueDate.BackColor = Color.FromArgb(51, 65, 85);
-                dtDueDate.ForeColor = Color.White;
+                dtDueDate.BackColor = InputBackgroundColor;
+                dtDueDate.ForeColor = TextPrimaryColor;
                 dtDueDate.Font = new Font("Segoe UI", 10);
 
                 Controls.AddRange(new Control[]
@@ -274,7 +322,7 @@ namespace LibraryManagementSystem.UI.Controls
                     Left = 30,
                     Top = top + 4,
                     Width = 90,
-                    ForeColor = Color.White,
+                    ForeColor = TextPrimaryColor,
                     Font = new Font("Segoe UI", 10)
                 };
             }
@@ -288,18 +336,32 @@ namespace LibraryManagementSystem.UI.Controls
                     Top = top,
                     Width = 90,
                     Height = 35,
-                    BackColor = Color.FromArgb(59, 130, 246),
-                    ForeColor = Color.White,
+                    BackColor = text == "Issue" ? AccentColor : Color.White,
+                    ForeColor = text == "Issue" ? Color.White : TextPrimaryColor,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
                 button.FlatAppearance.BorderSize = 0;
+                button.Paint += (s, e) =>
+                {
+                    var g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    using var path = new GraphicsPath();
+                    int cr = 6;
+                    path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                    path.AddArc(button.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                    path.AddArc(button.Width - cr * 2, button.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                    path.AddArc(0, button.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                    path.CloseAllFigures();
+                    button.Region = new Region(path);
+                };
                 button.Click += onClick;
-                button.MouseEnter += (s, e) => button.BackColor = ControlPaint.Light(Color.FromArgb(59, 130, 246), 0.1f);
-                button.MouseLeave += (s, e) => button.BackColor = Color.FromArgb(59, 130, 246);
+                button.MouseEnter += (s, e) => button.BackColor = text == "Issue" ? ControlPaint.Light(AccentColor, 0.1f) : InputBackgroundColor;
+                button.MouseLeave += (s, e) => button.BackColor = text == "Issue" ? AccentColor : Color.White;
                 return button;
             }
         }
+        private static readonly Color AccentLightColor = Color.FromArgb(209, 240, 215);
     }
 }

@@ -2,7 +2,9 @@ using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace LibraryManagementSystem.UI.Controls
 {
@@ -10,171 +12,295 @@ namespace LibraryManagementSystem.UI.Controls
     {
         private readonly MemberService memberService = new();
         private readonly TextBox txtSearch;
-        private readonly DataGridView dgvMembers;
+        private readonly FlowLayoutPanel flpMembers;
+        private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+        private static readonly Color CardBackgroundColor = Color.White;
+        private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
+        private static readonly Color TextSecondaryColor = Color.FromArgb(100, 116, 139);
+        private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
+        private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
+        private static readonly Color TagColor = Color.FromArgb(230, 224, 213);
+        private static readonly Color TagTextColor = Color.FromArgb(75, 85, 99);
+        private static readonly Color WarningColor = Color.FromArgb(239, 68, 68);
+        private static readonly Color WarningLightColor = Color.FromArgb(254, 226, 226);
 
         public MembersControl()
         {
-            BackColor = Color.FromArgb(15, 23, 42);
+            BackColor = BackgroundColor;
             Dock = DockStyle.Fill;
-            Padding = new Padding(0);
+            Padding = new Padding(32, 24, 32, 24);
 
-            // Title Panel
-            var titlePanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.FromArgb(30, 41, 59)
-            };
-
+            // Title Section
             var lblTitle = new Label
             {
-                Text = "👥 Members Management",
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.White,
+                Text = "Members",
+                Font = new Font("Georgia", 36, FontStyle.Bold),
+                ForeColor = TextPrimaryColor,
                 AutoSize = true,
-                Location = new Point(20, 18)
+                Location = new Point(0, 0)
             };
 
-            titlePanel.Controls.Add(lblTitle);
+            var lblSubtitle = new Label
+            {
+                Text = "5 active of 6 registered",
+                Font = new Font("Segoe UI", 14),
+                ForeColor = TextSecondaryColor,
+                AutoSize = true,
+                Location = new Point(0, 52)
+            };
 
-            // Toolbar Panel
+            // Toolbar Section
             var toolbarPanel = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 70,
-                BackColor = Color.FromArgb(30, 41, 59)
+                Location = new Point(0, 96),
+                Size = new Size(ClientSize.Width - 64, 56),
+                BackColor = Color.Transparent,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
-            txtSearch = new TextBox
-            {
-                PlaceholderText = "🔍 Search by name, email, or phone...",
-                Width = 400,
-                Height = 36,
-                Font = new Font("Segoe UI", 10),
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(51, 65, 85),
-                ForeColor = Color.White,
-                Location = new Point(20, 17)
-            };
+            txtSearch = CreateStyledTextBox("Search members...", new Point(0, 0), 400);
             txtSearch.TextChanged += (_, _) => LoadMembers(txtSearch.Text.Trim());
 
-            var btnAdd = CreateStyledButton("➕ Add Member", Color.FromArgb(46, 204, 113), (_, _) => AddMember());
-            btnAdd.Location = new Point(440, 17);
-            var btnEdit = CreateStyledButton("✏️ Edit Member", Color.FromArgb(241, 196, 15), (_, _) => EditMember());
-            btnEdit.Location = new Point(560, 17);
-            var btnDelete = CreateStyledButton("🗑️ Delete Member", Color.FromArgb(231, 76, 60), (_, _) => DeleteMember());
-            btnDelete.Location = new Point(680, 17);
-            var btnRefresh = CreateStyledButton("🔄 Refresh", Color.FromArgb(52, 73, 94), (_, _) => LoadMembers(txtSearch.Text.Trim()));
-            btnRefresh.Location = new Point(810, 17);
-
-            toolbarPanel.Controls.AddRange(new Control[] { txtSearch, btnAdd, btnEdit, btnDelete, btnRefresh });
-
-            // Data Grid
-            dgvMembers = new DataGridView
+            var btnAdd = CreateStyledButton("➕ Register Member", AccentColor, Color.White, (_, _) => AddMember());
+            btnAdd.Location = new Point(toolbarPanel.ClientSize.Width - 220, 0);
+            toolbarPanel.Resize += (_, _) =>
             {
-                Dock = DockStyle.Fill,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells,
-                ReadOnly = true,
-                MultiSelect = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                BackgroundColor = Color.FromArgb(30, 41, 59),
-                BorderStyle = BorderStyle.None,
-                GridColor = Color.FromArgb(51, 65, 85),
-                Font = new Font("Segoe UI", 9),
-                RowHeadersVisible = false,
-                EnableHeadersVisualStyles = false,
-                AllowUserToResizeColumns = true,
-                ColumnHeadersDefaultCellStyle =
-                {
-                    BackColor = Color.FromArgb(51, 65, 85),
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    WrapMode = DataGridViewTriState.True
-                },
-                DefaultCellStyle =
-                {
-                    BackColor = Color.FromArgb(30, 41, 59),
-                    ForeColor = Color.White,
-                    SelectionBackColor = Color.FromArgb(59, 130, 246),
-                    SelectionForeColor = Color.White,
-                    Padding = new Padding(5),
-                    WrapMode = DataGridViewTriState.True
-                },
-                AlternatingRowsDefaultCellStyle =
-                {
-                    BackColor = Color.FromArgb(30, 41, 59),
-                    ForeColor = Color.White,
-                    WrapMode = DataGridViewTriState.True
-                },
-                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells
+                btnAdd.Location = new Point(toolbarPanel.ClientSize.Width - 220, 0);
             };
 
-            Controls.Add(dgvMembers);
-            Controls.Add(toolbarPanel);
-            Controls.Add(titlePanel);
+            toolbarPanel.Controls.AddRange(new Control[] { txtSearch, btnAdd });
 
-            // Handle resize to scale fonts
-            Resize += (_, _) => UpdateGridFont();
-
-            Load += (_, _) =>
+            // Members Container
+            flpMembers = new FlowLayoutPanel
             {
-                LoadMembers();
-                UpdateGridFont();
+                Location = new Point(0, 176),
+                Size = new Size(ClientSize.Width - 64, ClientSize.Height - 200),
+                BackColor = Color.Transparent,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = true,
+                AutoScroll = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
+            Resize += (_, _) =>
+            {
+                toolbarPanel.Size = new Size(ClientSize.Width - 64, 56);
+                flpMembers.Size = new Size(ClientSize.Width - 64, ClientSize.Height - 200);
+            };
+
+            Controls.AddRange(new Control[] { lblTitle, lblSubtitle, toolbarPanel, flpMembers });
+
+            Load += (_, _) => LoadMembers();
         }
 
-        private Button CreateStyledButton(string text, Color color, EventHandler onClick)
+        private TextBox CreateStyledTextBox(string placeholder, Point location, int width)
         {
-            var button = new Button
+            var txtBox = new TextBox
+            {
+                PlaceholderText = placeholder,
+                Font = new Font("Segoe UI", 14),
+                Size = new Size(width, 48),
+                Location = location,
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = InputBackgroundColor,
+                ForeColor = TextPrimaryColor
+            };
+            Controls.Add(txtBox);
+            return txtBox;
+        }
+
+        private Button CreateStyledButton(string text, Color backColor, Color foreColor, EventHandler onClick)
+        {
+            var btn = new Button
             {
                 Text = text,
-                Width = 110,
-                Height = 36,
-                BackColor = color,
-                ForeColor = Color.White,
+                Size = new Size(220, 48),
+                BackColor = backColor,
+                ForeColor = foreColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                FlatAppearance = { BorderSize = 0 }
+                Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                Cursor = Cursors.Hand
             };
-            button.Click += onClick;
-            button.MouseEnter += (s, e) => button.BackColor = ControlPaint.Light(color, 0.1f);
-            button.MouseLeave += (s, e) => button.BackColor = color;
-            return button;
+            btn.FlatAppearance.BorderSize = 0;
+            btn.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 8;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(btn.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(btn.Width - cr * 2, btn.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, btn.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                btn.Region = new Region(path);
+            };
+            btn.Click += onClick;
+            btn.MouseEnter += (s, e) => btn.BackColor = ControlPaint.Light(backColor, 0.1f);
+            btn.MouseLeave += (s, e) => btn.BackColor = backColor;
+            return btn;
         }
 
-        private void UpdateGridFont()
+        private Panel CreateMemberCard(Member member)
         {
-            int availableWidth = ClientSize.Width;
-            float fontSize = Math.Max(8, Math.Min(12, availableWidth / 120f));
+            var card = new Panel
+            {
+                Size = new Size(440, 180),
+                BackColor = CardBackgroundColor,
+                Margin = new Padding(0, 0, 24, 24)
+            };
+            card.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 12;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(card.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(card.Width - cr * 2, card.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, card.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                card.Region = new Region(path);
+            };
 
-            dgvMembers.Font = new Font("Segoe UI", fontSize);
-            dgvMembers.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", fontSize + 0.5f, FontStyle.Bold);
+            // Avatar Panel
+            var avatarPanel = new Panel
+            {
+                Size = new Size(80, 80),
+                Location = new Point(24, 24),
+                BackColor = InputBackgroundColor
+            };
+            avatarPanel.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 40;
+                path.AddArc(0, 0, cr * 2, cr * 2, 0, 360);
+                path.CloseAllFigures();
+                avatarPanel.Region = new Region(path);
+
+                // Draw initials
+                string initials = string.Concat(member.FullName.Split(' ').Take(2).Select(n => n[0])).ToUpper();
+                using var font = new Font("Georgia", 26, FontStyle.Bold);
+                using var brush = new SolidBrush(TextSecondaryColor);
+                var size = g.MeasureString(initials, font);
+                g.DrawString(initials, font, brush, (avatarPanel.Width - size.Width) / 2, (avatarPanel.Height - size.Height) / 2);
+            };
+
+            // Name and Email
+            var lblName = new Label
+            {
+                Text = member.FullName,
+                Font = new Font("Segoe UI", 18, FontStyle.Bold),
+                ForeColor = TextPrimaryColor,
+                AutoSize = true,
+                Location = new Point(120, 28),
+                MaximumSize = new Size(220, 0)
+            };
+
+            var lblEmail = new Label
+            {
+                Text = member.Email,
+                Font = new Font("Segoe UI", 12),
+                ForeColor = TextSecondaryColor,
+                AutoSize = true,
+                Location = new Point(120, 60),
+                MaximumSize = new Size(220, 0)
+            };
+
+            // Status Tag
+            var statusBackColor = member.IsActive ? Color.FromArgb(220, 240, 230) : WarningLightColor;
+            var statusForeColor = member.IsActive ? AccentColor : WarningColor;
+            var statusPanel = new Panel
+            {
+                Size = new Size(96, 34),
+                Location = new Point(320, 36),
+                BackColor = statusBackColor
+            };
+            statusPanel.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 17;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(statusPanel.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(statusPanel.Width - cr * 2, statusPanel.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, statusPanel.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                statusPanel.Region = new Region(path);
+            };
+            var lblStatus = new Label
+            {
+                Text = member.IsActive ? "Active" : "Inactive",
+                Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                ForeColor = statusForeColor,
+                AutoSize = true,
+                Location = new Point(18, 8),
+                BackColor = Color.Transparent
+            };
+            statusPanel.Controls.Add(lblStatus);
+
+            // Divider
+            var divider = new Panel
+            {
+                Size = new Size(card.Width - 48, 1),
+                Location = new Point(24, 124),
+                BackColor = InputBackgroundColor
+            };
+
+            // Membership Date and Borrow Count
+            var lblMembership = new Label
+            {
+                Text = $"Joined {member.MembershipDate:dd MMM yyyy}",
+                Font = new Font("Segoe UI", 13),
+                ForeColor = TextSecondaryColor,
+                AutoSize = true,
+                Location = new Point(24, 140)
+            };
+
+            var lblBorrowed = new Label
+            {
+                Text = "📚 2 borrowed",
+                Font = new Font("Segoe UI", 13),
+                ForeColor = TextSecondaryColor,
+                AutoSize = true,
+                Location = new Point(260, 140)
+            };
+
+            card.Controls.AddRange(new Control[] { avatarPanel, lblName, lblEmail, statusPanel, divider, lblMembership, lblBorrowed });
+            return card;
         }
 
         private void LoadMembers(string keyword = "")
         {
             try
             {
-                dgvMembers.DataSource = string.IsNullOrWhiteSpace(keyword)
+                flpMembers.Controls.Clear();
+                var members = string.IsNullOrWhiteSpace(keyword)
                     ? memberService.GetAllMembers()
                     : memberService.SearchMembers(keyword);
 
-                var idColumn = dgvMembers.Columns["MemberID"];
-                if (idColumn != null)
+                foreach (var member in members)
                 {
-                    idColumn.Visible = false;
+                    flpMembers.Controls.Add(CreateMemberCard(member));
+                }
+
+                // Update subtitle count
+                int activeCount = members.Count(m => m.IsActive);
+                foreach (Control control in Controls)
+                {
+                    if (control is Label lbl && lbl.Text.Contains("active of"))
+                    {
+                        lbl.Text = $"{activeCount} active of {members.Count} registered";
+                        break;
+                    }
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Unable to load members.\n\n{ex.Message}", "Members", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private Member? GetSelectedMember()
-        {
-            return dgvMembers.CurrentRow?.DataBoundItem as Member;
         }
 
         private void AddMember()
@@ -187,41 +313,6 @@ namespace LibraryManagementSystem.UI.Controls
             }
         }
 
-        private void EditMember()
-        {
-            var selected = GetSelectedMember();
-            if (selected == null)
-            {
-                MessageBox.Show("Please select a member first.", "Members", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            using var editor = new MemberEditorForm(selected);
-            if (editor.ShowDialog(this) == DialogResult.OK)
-            {
-                memberService.UpdateMember(editor.Member);
-                LoadMembers(txtSearch.Text.Trim());
-            }
-        }
-
-        private void DeleteMember()
-        {
-            var selected = GetSelectedMember();
-            if (selected == null)
-            {
-                MessageBox.Show("Please select a member first.", "Members", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            if (MessageBox.Show($"Delete member '{selected.FullName}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-            {
-                return;
-            }
-
-            memberService.DeleteMember(selected.MemberID);
-            LoadMembers(txtSearch.Text.Trim());
-        }
-
         private sealed class MemberEditorForm : Form
         {
             private readonly TextBox txtName = new() { Left = 150, Top = 20, Width = 240 };
@@ -230,6 +321,12 @@ namespace LibraryManagementSystem.UI.Controls
             private readonly TextBox txtAddress = new() { Left = 150, Top = 125, Width = 240 };
             private readonly DateTimePicker dtMembership = new() { Left = 150, Top = 160, Width = 240, Format = DateTimePickerFormat.Short };
             private readonly CheckBox chkActive = new() { Left = 150, Top = 198, Width = 240, Text = "Active member", Checked = true };
+
+            private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+            private static readonly Color CardBackgroundColor = Color.White;
+            private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
+            private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
+            private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
 
             public Member Member { get; }
 
@@ -255,8 +352,8 @@ namespace LibraryManagementSystem.UI.Controls
                 MaximizeBox = false;
                 MinimizeBox = false;
                 StartPosition = FormStartPosition.CenterParent;
-                BackColor = Color.FromArgb(30, 41, 59);
-                ForeColor = Color.White;
+                BackColor = BackgroundColor;
+                ForeColor = TextPrimaryColor;
 
                 Controls.AddRange(new Control[]
                 {
@@ -291,15 +388,15 @@ namespace LibraryManagementSystem.UI.Controls
                     Left = 30,
                     Top = top + 4,
                     Width = 100,
-                    ForeColor = Color.White,
+                    ForeColor = TextPrimaryColor,
                     Font = new Font("Segoe UI", 10)
                 };
             }
 
             private static TextBox StyleTextBox(TextBox textBox)
             {
-                textBox.BackColor = Color.FromArgb(51, 65, 85);
-                textBox.ForeColor = Color.White;
+                textBox.BackColor = InputBackgroundColor;
+                textBox.ForeColor = TextPrimaryColor;
                 textBox.BorderStyle = BorderStyle.FixedSingle;
                 textBox.Font = new Font("Segoe UI", 10);
                 return textBox;
@@ -307,8 +404,8 @@ namespace LibraryManagementSystem.UI.Controls
 
             private static DateTimePicker StyleDateTimePicker(DateTimePicker dateTimePicker)
             {
-                dateTimePicker.BackColor = Color.FromArgb(51, 65, 85);
-                dateTimePicker.ForeColor = Color.White;
+                dateTimePicker.BackColor = InputBackgroundColor;
+                dateTimePicker.ForeColor = TextPrimaryColor;
                 dateTimePicker.Font = new Font("Segoe UI", 10);
                 return dateTimePicker;
             }
@@ -316,7 +413,7 @@ namespace LibraryManagementSystem.UI.Controls
             private static CheckBox StyleCheckBox(CheckBox checkBox)
             {
                 checkBox.BackColor = Color.Transparent;
-                checkBox.ForeColor = Color.White;
+                checkBox.ForeColor = TextPrimaryColor;
                 checkBox.Font = new Font("Segoe UI", 10);
                 return checkBox;
             }
@@ -330,16 +427,29 @@ namespace LibraryManagementSystem.UI.Controls
                     Top = top,
                     Width = 100,
                     Height = 35,
-                    BackColor = Color.FromArgb(59, 130, 246),
-                    ForeColor = Color.White,
+                    BackColor = text == "Save" ? AccentColor : Color.White,
+                    ForeColor = text == "Save" ? Color.White : TextPrimaryColor,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
                 button.FlatAppearance.BorderSize = 0;
+                button.Paint += (s, e) =>
+                {
+                    var g = e.Graphics;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    using var path = new GraphicsPath();
+                    int cr = 6;
+                    path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                    path.AddArc(button.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                    path.AddArc(button.Width - cr * 2, button.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                    path.AddArc(0, button.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                    path.CloseAllFigures();
+                    button.Region = new Region(path);
+                };
                 button.Click += onClick;
-                button.MouseEnter += (s, e) => button.BackColor = ControlPaint.Light(Color.FromArgb(59, 130, 246), 0.1f);
-                button.MouseLeave += (s, e) => button.BackColor = Color.FromArgb(59, 130, 246);
+                button.MouseEnter += (s, e) => button.BackColor = text == "Save" ? ControlPaint.Light(AccentColor, 0.1f) : InputBackgroundColor;
+                button.MouseLeave += (s, e) => button.BackColor = text == "Save" ? AccentColor : Color.White;
                 return button;
             }
 

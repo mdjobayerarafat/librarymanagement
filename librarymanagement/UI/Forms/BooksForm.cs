@@ -6,108 +6,27 @@ using System.Windows.Forms;
 
 namespace LibraryManagementSystem.UI.Forms
 {
-    public class BooksForm : Form
+    public class BooksForm : BaseForm
     {
         private readonly BookService bookService = new();
         private readonly TextBox txtSearch;
         private readonly DataGridView dgvBooks;
-
-        public BooksForm()
+        public BooksForm() : base("📚 Manage Books")
         {
-            Text = "📚 Manage Books";
-            StartPosition = FormStartPosition.CenterScreen;
-            WindowState = FormWindowState.Maximized;
-            BackColor = Color.FromArgb(240, 248, 255);
-
-            // Sidebar Panel
-            var sidebarPanel = new Panel
-            {
-                Dock = DockStyle.Left,
-                Width = 240,
-                BackColor = Color.FromArgb(30, 41, 59),
-                Padding = new Padding(0, 20, 0, 0)
-            };
-
-            // Sidebar Header
-            var sidebarHeader = new Label
-            {
-                Text = "📚 LibraryMS",
-                Font = new Font("Segoe UI", 18, FontStyle.Bold),
-                ForeColor = Color.White,
-                AutoSize = true,
-                Location = new Point(20, 15)
-            };
-            sidebarPanel.Controls.Add(sidebarHeader);
-
-            // Sidebar Buttons
-            var btnDashboard = CreateSidebarButton("🏠 Dashboard", Color.Transparent, (_, _) => Close());
-            btnDashboard.Location = new Point(10, 70);
-            var btnBooks = CreateSidebarButton("📖 Books", Color.FromArgb(59, 130, 246), (_, _) => { });
-            btnBooks.Location = new Point(10, 120);
-            var btnMembers = CreateSidebarButton("👥 Members", Color.Transparent, (_, _) => { });
-            btnMembers.Location = new Point(10, 170);
-            var btnTransactions = CreateSidebarButton("🔄 Transactions", Color.Transparent, (_, _) => { });
-            btnTransactions.Location = new Point(10, 220);
-            var btnSettings = CreateSidebarButton("⚙️ Settings", Color.Transparent, (_, _) => MessageBox.Show("Settings coming soon!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information));
-            btnSettings.Location = new Point(10, 270);
-            var btnLogout = CreateSidebarButton("🚪 Log Out", Color.Transparent, (_, _) => Close());
-            btnLogout.Location = new Point(10, sidebarPanel.Height - 60);
-
-            // Keep logout button at bottom
-            sidebarPanel.Resize += (_, _) =>
-            {
-                btnLogout.Location = new Point(10, sidebarPanel.Height - 60);
-            };
-
-            sidebarPanel.Controls.AddRange(new Control[] { btnDashboard, btnBooks, btnMembers, btnTransactions, btnSettings, btnLogout });
-
-            // Top Bar
-            var topBar = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.White
-            };
-
-            var lblTitle = new Label
-            {
-                Text = "📚 Books Management",
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.FromArgb(51, 65, 85),
-                AutoSize = true,
-                Location = new Point(260, 18)
-            };
-
-            var lblDate = new Label
-            {
-                Text = $"📅 {DateTime.Now:dddd, MMMM dd, yyyy}",
-                Font = new Font("Segoe UI", 10),
-                ForeColor = Color.FromArgb(100, 116, 139),
-                AutoSize = true,
-                Location = new Point(topBar.Width - 300, 20),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-
-            topBar.Controls.AddRange(new Control[] { lblTitle, lblDate });
-            topBar.Resize += (_, _) =>
-            {
-                lblDate.Location = new Point(topBar.Width - 300, 20);
-            };
-
-            // Content Panel
-            var contentPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(240, 248, 255),
-                Padding = new Padding(20, 20, 20, 20)
-            };
+            // Add sidebar buttons (reuse base layout)
+            AddSidebarButton("🏠 Dashboard", 70, (_, _) => Close());
+            AddSidebarButton("📖 Books", 120, (_, _) => { });
+            AddSidebarButton("👥 Members", 170, (_, _) => { });
+            AddSidebarButton("🔄 Transactions", 220, (_, _) => { });
+            AddSidebarButton("⚙️ Settings", 270, (_, _) => MessageBox.Show("Settings coming soon!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information));
+            AddSidebarButton("🚪 Log Out", 320, (_, _) => Close());
 
             // Toolbar Panel (inside content)
             var toolbarPanel = new Panel
             {
                 Dock = DockStyle.Top,
                 Height = 70,
-                BackColor = Color.White
+                BackColor = Color.FromArgb(20, 30, 40)
             };
 
             txtSearch = new TextBox
@@ -140,9 +59,9 @@ namespace LibraryManagementSystem.UI.Forms
                 ReadOnly = true,
                 MultiSelect = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                BackgroundColor = Color.White,
+                BackgroundColor = Color.FromArgb(20, 30, 40),
                 BorderStyle = BorderStyle.None,
-                GridColor = Color.FromArgb(220, 220, 220),
+                GridColor = Color.FromArgb(60, 70, 80),
                 Font = new Font("Segoe UI", 9),
                 RowHeadersVisible = false,
                 EnableHeadersVisualStyles = false
@@ -150,16 +69,12 @@ namespace LibraryManagementSystem.UI.Forms
             dgvBooks.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(41, 128, 185);
             dgvBooks.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
             dgvBooks.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-            dgvBooks.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(249, 249, 249);
+            dgvBooks.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(18, 27, 40);
             dgvBooks.DefaultCellStyle.Padding = new Padding(5);
 
-            contentPanel.Controls.Add(dgvBooks);
-            contentPanel.Controls.Add(toolbarPanel);
-
-            // Add controls
-            Controls.Add(contentPanel);
-            Controls.Add(topBar);
-            Controls.Add(sidebarPanel);
+            // Add toolbar and grid into the shared content panel
+            ContentPanel.Controls.Add(dgvBooks);
+            ContentPanel.Controls.Add(toolbarPanel);
 
             Shown += (_, _) => LoadBooks();
         }

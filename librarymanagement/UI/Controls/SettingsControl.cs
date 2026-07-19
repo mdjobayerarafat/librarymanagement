@@ -2,6 +2,7 @@ using LibraryManagementSystem.Data;
 using MySql.Data.MySqlClient;
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
 namespace LibraryManagementSystem.UI.Controls
@@ -12,95 +13,110 @@ namespace LibraryManagementSystem.UI.Controls
         private readonly CheckBox chkAllowMultipleBorrows;
         private readonly TextBox txtMaxBooksPerMember;
         private readonly Button btnSaveSettings;
+        private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+        private static readonly Color CardBackgroundColor = Color.White;
+        private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
+        private static readonly Color TextSecondaryColor = Color.FromArgb(100, 116, 139);
+        private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
+        private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
 
         public SettingsControl()
         {
-            BackColor = Color.FromArgb(15, 23, 42);
+            BackColor = BackgroundColor;
             Dock = DockStyle.Fill;
-            Padding = new Padding(20);
+            Padding = new Padding(32, 24, 32, 24);
 
-            // Title Panel
-            var titlePanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.FromArgb(30, 41, 59)
-            };
-
+            // Title Section
             var lblTitle = new Label
             {
-                Text = "⚙️ Settings",
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.White,
+                Text = "Settings",
+                Font = new Font("Georgia", 36, FontStyle.Bold),
+                ForeColor = TextPrimaryColor,
                 AutoSize = true,
-                Location = new Point(20, 18)
+                Location = new Point(0, 0)
             };
-
-            titlePanel.Controls.Add(lblTitle);
 
             // Settings Container Panel
             var settingsPanel = new Panel
             {
-                Dock = DockStyle.Fill,
+                Location = new Point(0, 80),
+                Size = new Size(ClientSize.Width - 64, ClientSize.Height - 104),
                 BackColor = Color.Transparent,
                 AutoScroll = true,
-                Padding = new Padding(20)
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
 
             // Borrow Settings Group
-            var borrowGroup = new GroupBox
+            var borrowGroup = new Panel
             {
                 Text = "Borrow Settings",
-                ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                BackColor = Color.FromArgb(30, 41, 59),
-                Size = new Size(600, 200),
-                Location = new Point(0, 0)
+                BackColor = CardBackgroundColor,
+                Size = new Size(600, 220),
+                Location = new Point(0, 0),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            borrowGroup.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 12;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(borrowGroup.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(borrowGroup.Width - cr * 2, borrowGroup.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, borrowGroup.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                borrowGroup.Region = new Region(path);
+            };
+
+            var lblGroupTitle = new Label
+            {
+                Text = "Borrow Settings",
+                Font = new Font("Georgia", 18, FontStyle.Bold),
+                ForeColor = TextPrimaryColor,
+                AutoSize = true,
+                Location = new Point(24, 24)
             };
 
             // Default Borrow Days
-            var lblBorrowDays = CreateLabel("Default Borrow Days (e.g., 14):", 20);
-            txtDefaultBorrowDays = CreateTextBox("14", 20, 50);
+            var lblBorrowDays = CreateLabel("Default Borrow Days (e.g., 14):", 60);
+            borrowGroup.Controls.Add(lblBorrowDays);
+            txtDefaultBorrowDays = CreateTextBox("14", 24, 84, borrowGroup);
 
             // Allow Multiple Borrows
             chkAllowMultipleBorrows = new CheckBox
             {
                 Text = "Allow members to borrow multiple books at once",
-                Font = new Font("Segoe UI", 10),
-                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 11),
+                ForeColor = TextPrimaryColor,
                 BackColor = Color.Transparent,
-                Location = new Point(20, 90),
+                Location = new Point(24, 132),
                 AutoSize = true,
                 Checked = true
             };
+            borrowGroup.Controls.Add(chkAllowMultipleBorrows);
 
             // Max Books Per Member
-            var lblMaxBooks = CreateLabel("Max Books Per Member:", 130);
-            txtMaxBooksPerMember = CreateTextBox("5", 20, 160);
+            var lblMaxBooks = CreateLabel("Max Books Per Member:", 164);
+            borrowGroup.Controls.Add(lblMaxBooks);
+            txtMaxBooksPerMember = CreateTextBox("5", 24, 188, borrowGroup);
 
-            borrowGroup.Controls.AddRange(new Control[] { lblBorrowDays, txtDefaultBorrowDays, chkAllowMultipleBorrows, lblMaxBooks, txtMaxBooksPerMember });
+            borrowGroup.Controls.Add(lblGroupTitle);
 
             // Save Button
-            btnSaveSettings = new Button
-            {
-                Text = "Save Settings",
-                Size = new Size(200, 45),
-                Location = new Point(0, 220),
-                BackColor = Color.FromArgb(46, 204, 113),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            btnSaveSettings.FlatAppearance.BorderSize = 0;
-            btnSaveSettings.Click += (_, _) => SaveSettings();
-            btnSaveSettings.MouseEnter += (s, e) => btnSaveSettings.BackColor = Color.FromArgb(39, 174, 96);
-            btnSaveSettings.MouseLeave += (s, e) => btnSaveSettings.BackColor = Color.FromArgb(46, 204, 113);
+            btnSaveSettings = CreateStyledButton("Save Settings", AccentColor, Color.White, (_, _) => SaveSettings());
+            btnSaveSettings.Location = new Point(0, 244);
 
             settingsPanel.Controls.AddRange(new Control[] { borrowGroup, btnSaveSettings });
 
-            Controls.Add(settingsPanel);
-            Controls.Add(titlePanel);
+            Controls.AddRange(new Control[] { lblTitle, settingsPanel });
+
+            Resize += (_, _) =>
+            {
+                settingsPanel.Size = new Size(ClientSize.Width - 64, ClientSize.Height - 104);
+                borrowGroup.Width = Math.Max(600, settingsPanel.ClientSize.Width);
+            };
 
             // Load existing settings
             LoadSettings();
@@ -111,25 +127,82 @@ namespace LibraryManagementSystem.UI.Controls
             return new Label
             {
                 Text = text,
-                Font = new Font("Segoe UI", 10),
-                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 11),
+                ForeColor = TextPrimaryColor,
                 AutoSize = true,
-                Location = new Point(20, top)
+                Location = new Point(24, top)
             };
         }
 
-        private TextBox CreateTextBox(string placeholder, int left, int top)
+        private TextBox CreateTextBox(string placeholder, int left, int top, Panel parent)
         {
-            return new TextBox
+            var panel = new Panel
+            {
+                Location = new Point(left, top),
+                Size = new Size(250, 40),
+                BackColor = InputBackgroundColor
+            };
+            panel.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 8;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(panel.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(panel.Width - cr * 2, panel.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, panel.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                panel.Region = new Region(path);
+            };
+
+            var txtBox = new TextBox
             {
                 Text = placeholder,
-                Font = new Font("Segoe UI", 10),
-                Size = new Size(250, 32),
-                Location = new Point(left, top),
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(51, 65, 85),
-                ForeColor = Color.White
+                Font = new Font("Segoe UI", 11),
+                Size = new Size(226, 40),
+                Location = new Point(12, 8),
+                BorderStyle = BorderStyle.None,
+                BackColor = InputBackgroundColor,
+                ForeColor = TextPrimaryColor
             };
+
+            panel.Controls.Add(txtBox);
+            parent.Controls.Add(panel);
+
+            return txtBox;
+        }
+
+        private Button CreateStyledButton(string text, Color backColor, Color foreColor, EventHandler onClick)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Size = new Size(200, 48),
+                BackColor = backColor,
+                ForeColor = foreColor,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 0;
+            btn.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using var path = new GraphicsPath();
+                int cr = 8;
+                path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
+                path.AddArc(btn.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(btn.Width - cr * 2, btn.Height - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, btn.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.CloseAllFigures();
+                btn.Region = new Region(path);
+            };
+            btn.Click += onClick;
+            btn.MouseEnter += (s, e) => btn.BackColor = ControlPaint.Light(backColor, 0.1f);
+            btn.MouseLeave += (s, e) => btn.BackColor = backColor;
+            return btn;
         }
 
         private void LoadSettings()
