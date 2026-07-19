@@ -1,4 +1,4 @@
-using LibraryManagementSystem.Models;
+﻿﻿using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using System;
 using System.Drawing;
@@ -13,13 +13,13 @@ namespace LibraryManagementSystem.UI.Controls
         private readonly TransactionService _transactionService = new();
         private readonly DataGridView _dgvActiveLoans;
         private readonly TextBox _txtSearch;
-        private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+        private static readonly Color BackgroundColor = Color.FromArgb(247, 247, 255);
         private static readonly Color CardBackgroundColor = Color.White;
-        private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
-        private static readonly Color TextSecondaryColor = Color.FromArgb(100, 116, 139);
-        private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
-        private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
-        private static readonly Color AccentLightColor = Color.FromArgb(209, 240, 215);
+        private static readonly Color TextPrimaryColor = Color.FromArgb(41, 47, 54);
+        private static readonly Color TextSecondaryColor = Color.FromArgb(73, 88, 103);
+        private static readonly Color AccentColor = Color.FromArgb(87, 115, 153);
+        private static readonly Color InputBackgroundColor = Color.FromArgb(247, 247, 255);
+        private static readonly Color AccentLightColor = Color.FromArgb(189, 213, 234);
 
         public ActiveLoansControl()
         {
@@ -60,7 +60,8 @@ namespace LibraryManagementSystem.UI.Controls
                 Location = new Point(0, 156),
                 Size = new Size(ClientSize.Width - 64, ClientSize.Height - 180),
                 BackColor = CardBackgroundColor,
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                Padding = new Padding(2)
             };
             gridContainer.Paint += (s, e) =>
             {
@@ -69,11 +70,13 @@ namespace LibraryManagementSystem.UI.Controls
                 using var path = new GraphicsPath();
                 int cr = 12;
                 path.AddArc(0, 0, cr * 2, cr * 2, 180, 90);
-                path.AddArc(gridContainer.Width - cr * 2, 0, cr * 2, cr * 2, 270, 90);
-                path.AddArc(gridContainer.Width - cr * 2, gridContainer.Height - cr * 2, cr * 2, cr * 2, 0, 90);
-                path.AddArc(0, gridContainer.Height - cr * 2, cr * 2, cr * 2, 90, 90);
+                path.AddArc(gridContainer.Width - 1 - cr * 2, 0, cr * 2, cr * 2, 270, 90);
+                path.AddArc(gridContainer.Width - 1 - cr * 2, gridContainer.Height - 1 - cr * 2, cr * 2, cr * 2, 0, 90);
+                path.AddArc(0, gridContainer.Height - 1 - cr * 2, cr * 2, cr * 2, 90, 90);
                 path.CloseAllFigures();
-                gridContainer.Region = new Region(path);
+                
+                using var borderPen = new Pen(Color.FromArgb(189, 213, 234), 2f);
+                g.DrawPath(borderPen, path);
             };
 
             // Data Grid
@@ -102,14 +105,14 @@ namespace LibraryManagementSystem.UI.Controls
                 {
                     BackColor = CardBackgroundColor,
                     ForeColor = TextPrimaryColor,
-                    SelectionBackColor = AccentLightColor,
-                    SelectionForeColor = AccentColor,
-                    Padding = new Padding(5),
+                    SelectionBackColor = Color.FromArgb(189, 213, 234),
+                    SelectionForeColor = TextPrimaryColor,
+                    Padding = new Padding(8, 4, 8, 4),
                     WrapMode = DataGridViewTriState.True
                 },
                 AlternatingRowsDefaultCellStyle =
                 {
-                    BackColor = Color.FromArgb(249, 247, 243),
+                    BackColor = Color.FromArgb(247, 247, 255),
                     ForeColor = TextPrimaryColor,
                     WrapMode = DataGridViewTriState.True
                 },

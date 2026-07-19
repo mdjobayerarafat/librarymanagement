@@ -1,4 +1,4 @@
-using LibraryManagementSystem.Data;
+﻿using LibraryManagementSystem.Data;
 using MySql.Data.MySqlClient;
 using System;
 using System.Drawing;
@@ -13,12 +13,12 @@ namespace LibraryManagementSystem.UI.Controls
         private readonly CheckBox chkAllowMultipleBorrows;
         private readonly TextBox txtMaxBooksPerMember;
         private readonly Button btnSaveSettings;
-        private static readonly Color BackgroundColor = Color.FromArgb(245, 242, 235);
+        private static readonly Color BackgroundColor = Color.FromArgb(247, 247, 255);
         private static readonly Color CardBackgroundColor = Color.White;
-        private static readonly Color TextPrimaryColor = Color.FromArgb(26, 32, 44);
-        private static readonly Color TextSecondaryColor = Color.FromArgb(100, 116, 139);
-        private static readonly Color AccentColor = Color.FromArgb(20, 83, 45);
-        private static readonly Color InputBackgroundColor = Color.FromArgb(230, 224, 213);
+        private static readonly Color TextPrimaryColor = Color.FromArgb(41, 47, 54);
+        private static readonly Color TextSecondaryColor = Color.FromArgb(73, 88, 103);
+        private static readonly Color AccentColor = Color.FromArgb(87, 115, 153);
+        private static readonly Color InputBackgroundColor = Color.FromArgb(247, 247, 255);
 
         public SettingsControl()
         {
